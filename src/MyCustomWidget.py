@@ -5,43 +5,79 @@ Created on 2022年7月18日
 '''
 import os
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.Qt import QWidget, QLabel
+from PyQt5.QtWidgets import QWidget, QLabel
 
 class OneButtonOneLabel(QWidget):
     '''
-    :desciption: 一个上按钮下标签的垂直布局，用于展示圣物
+    :desciption: 一个上按钮下标签的垂直布局，用于展示物件
     '''
-    def __init__(self, parent=None, index=0, pic=None, text=0 ):
+    def __init__(self, parent=None, index=0, pic="", color="", text="", size=105, border=True):
         '''
         :function: 创建含一个按钮+标签的垂直布局
+        :param parent:容器
+        :param index:按钮编号(从0开始)
         :param pic:按钮图片路径
-        :param text:标签显示内容
-        :param parent:我母鸡啊
+        :param color:按钮边框颜色
+        :param text:标签显示内容      
+        :param size:调整按钮大小
+        :param border:是否需要圆角边框
         '''
         super(OneButtonOneLabel, self).__init__(parent)
-        self.resize(105, 105)
+        size = parent.width() / 5
+        #print(parent, size)
+        self.resize(size, size)
         #self.layout = QtWidgets.QVBoxLayout()
         self.vbox = QtWidgets.QVBoxLayout()
         self.vbox.setContentsMargins(0, 0, 0, 0)
         self.vbox.addStretch(1)
         self.vbox.setSpacing(1)
         self.setLayout(self.vbox)
-        if os.path.isfile(pic):
-            
-            self.btn = QtWidgets.QPushButton(QtGui.QIcon(pic),"")
-            
-            self.btn.setStyleSheet('QPushButton{margin:3px};')
-            
-            self.btn.setIconSize(QtCore.QSize(95, 95))
-            
-            self.vbox.addWidget(self.btn)
+        
+        if not os.path.isfile(pic): #不存在路径则填充空白图
+            pic = "../images/UI_Blank.png"
+                
+        self.btn = QtWidgets.QPushButton(QtGui.QIcon(pic),"",self)            
+        self.btn.setIconSize(QtCore.QSize(size - 10, size - 10))
+        if not border:
+            style_btn = f'''QPushButton{{
+            background: rgba(255,255,255,0.6);
+            }}
+            QPushButton:pressed{{
+            background: rgba(255,255,255,0.75);
+            }}'''
+        else:
+            style_btn = f'''QPushButton{{border: 5px solid {color};
+            margin: 3px; 
+            border-radius: 8px;
+            background: rgba(255,255,255,0.5);
+            }}
+            QPushButton:hover{{
+            background: rgba(255,255,255,0.75);
+            }}
+            QPushButton:pressed{{
+            background: rgba(255,255,255,1);
+            }}'''
+        self.btn.setStyleSheet(style_btn)
+        self.btn.setCursor(QtGui.QCursor(QtGui.QPixmap("./images/Ellipses_5.png").scaled(40, 30)))
+        self.vbox.addWidget(self.btn)
 
         self.lab1 = QLabel(self)
         self.lab1.setText(text)
         self.lab1.setAlignment(QtCore.Qt.AlignCenter)
-        self.lab1.setFixedSize(95, 20)
+        self.lab1.setFixedSize(size, 20)
+        #gbk编码成字节流，一个中文2B，超7个字则缩小字体
+        if len(text.encode("gbk")) <= 14: 
+            font_size = 16
+        else:
+            font_size = 13 
+        style_lab = f'''QLabel{{
+        font: bold;
+        font-size: {font_size}px;
+        font-family: "Arial", "微软雅黑", "宋体", sans-serif;
+        }}'''
+        self.lab1.setStyleSheet(style_lab)
         self.vbox.addWidget(self.lab1)
-        self.btn.index = index #识别按钮发送方
-        
+        self.btn.index = index #记录按钮编号
+        #self.btn.color = color #识别按钮框色
         
         
