@@ -1,0 +1,133 @@
+/*font不支持bold*/
+QLabel[level="label_score"]{
+	font-family: "汉仪尚巍手书W", "微软雅黑", "宋体", sans-serif;
+	font: bold;
+	font-size: 24px;
+	background: rgba(255,255,255,0.6);
+}
+
+QLabel[level="label_score_small"]{
+	font-family: "汉仪尚巍手书W", "微软雅黑", "宋体", sans-serif;
+	font: bold;
+	font-size: 18px;
+	background: rgba(255,255,255,0.6);
+}
+
+QLabel[level="label_info_name"]{
+	font-family: "方正粗雅宋_GBK", "微软雅黑", "宋体", sans-serif;
+	font: bold;
+	font-size: 24px;
+	background: rgba(255,255,255,0.6);
+}
+
+QLabel[level="label_list_title"]{
+	font-family: "方正粗雅宋_GBK", "微软雅黑", "宋体", sans-serif;
+	font: bold;
+	font-size: 24px;
+}
+
+QLabel[level="label_info_header"]{
+	font-family: "微软雅黑", "宋体", sans-serif;
+	font: bold;
+	font-size: 24px;
+}
+
+QLabel[level="label_info_header_small"]{
+	font-family: "微软雅黑", "宋体", sans-serif;
+	font: bold;
+	font-size: 18px;
+}
+
+QTextBrowser[level="text_info"]{
+	font-family: '微软雅黑', '宋体', sans-serif;
+	background: rgba(255,255,255,0.6);
+}
+
+QTableWidget[level="table_info"]{
+	gridline-color: black;
+}
+
+QTabWidget{
+	background: rgba(255,255,255,0.6);
+}
+
+QTabWidget::pane{
+	border:none;
+	top: -1px; /*遮住部分tabwidget的头部*/
+}
+
+
+QTabBar::tab{
+	background: rgba(255,255,255,0);
+	font-family: "微软雅黑", "宋体", sans-serif;
+	font-size: 15px;
+	margin-left: 9px;
+	padding: 1px;
+}
+
+QTabBar::tab:selected{
+	border-bottom: 1px solid green;
+	font: bold;
+}
+
+QPushButton[level="btn_of_main_function"]{
+	background: #426F42 no-repeat center;
+	border: 5px solid #5C3317;
+	border-radius: 8px;
+	font-size: 20px;
+	color: white;
+	font-family: "微软雅黑", "宋体", sans-serif;
+}
+QPushButton:hover[level="btn_of_main_function"]{
+	border: 5px solid #A67D3D;
+	color: #FFFF00;
+}
+QPushButton:pressed[level="btn_of_main_function"]{
+	border: 5px solid #CFB53B;
+}
+
+.color-pink-03{
+    color: #ee230d;
+}
+.color-pink-02 {
+    color: #ff654e;
+}
+.color-pink-01 {
+    color: #ff968d;
+}
+.color-yellow-04 {
+    color: #ff9201;
+}
+.color-yellow-03 {
+    color: #f8ba00;
+}
+.color-green-03 {
+    color: #1db100;
+}
+.color-green-02 {
+    color: #60d837;
+}
+.color-purple-04 {
+    color: #99195e;
+}
+.color-blue-02 {
+    color: #02a2ff;
+}
+.color-blue-01 {
+    color: #56c1fe;
+}
+.color-gray-03 {
+    color: #5f5f5f;
+}
+.color-gray-02 {
+    color: #929292;
+}
+.color-gray-01 {
+    color: #000000;
+}
+.font-size-16 {
+    font-size: 15px;
+}
+.font-size-20 {
+    font-size: 20px;
+}
