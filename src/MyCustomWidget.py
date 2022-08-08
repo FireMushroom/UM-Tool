@@ -24,9 +24,7 @@ class OneButtonOneLabel(QWidget):
         '''
         super(OneButtonOneLabel, self).__init__(parent)
         size = parent.width() / 5
-        #print(parent, size)
         self.resize(size, size)
-        #self.layout = QtWidgets.QVBoxLayout()
         self.vbox = QtWidgets.QVBoxLayout()
         self.vbox.setContentsMargins(0, 0, 0, 0)
         self.vbox.addStretch(1)
@@ -79,5 +77,4 @@ class OneButtonOneLabel(QWidget):
         self.vbox.addWidget(self.lab1)
         self.btn.index = index #记录按钮编号
         #self.btn.color = color #识别按钮框色
-        
         

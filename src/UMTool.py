@@ -3,12 +3,13 @@ from UMHelper2 import Ui_MainWindow
 import os.path
 from functools import partial
 from PyQt5 import QtGui, QtWidgets, QtCore
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QWidget, QMenu, QAction
 from PyQt5.QtGui import QIcon, QPainter, QPixmap, QBitmap
 import math
 from PyQt5.QtCore import QSize, Qt
 import xlrd
 import re
+#import pandas as pd
 from MyCustomWidget import OneButtonOneLabel
 
 class MainWindow(QMainWindow):
@@ -17,6 +18,7 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.m_flag = False
+        self.pages_name = ["Relics", "Potions", "Blessings", "Curses", "Familiars"]
         #新表格登记处,需要更新修改
         excel_list = ["Relic_new.xls", "Potion_new.xlsx", "Blessing_new.xlsx", "Curse_new.xlsx", "Familiar_new.xlsx"]
         self.page_info_num = len(excel_list)
@@ -29,8 +31,6 @@ class MainWindow(QMainWindow):
         self.table_num = [] #表格项目数
         for i in range(len(self.info_table_list)):
             self.table_num.append(self.info_table_list[i].nrows - 1)   
-        #print(self.table_num)
-        #self.setWindowOpacity(0.5)
         
         self.btn_ind = [-2 for i in range(self.page_info_num)] #当前按钮编号
         self.f_relic_no = -1 #合成圣物1
@@ -50,12 +50,11 @@ class MainWindow(QMainWindow):
         self.pixmap = QPixmap("./images/UI_BookProps1.png")
         self.bix = QBitmap(QPixmap("./images/UI_BookProps_mask.png").scaled(self.size()))
         self.setMask(self.bix)
-
+    #-------------------事件重写--------------------
     #绘制背景图片    
     def paintEvent(self, event):
         super().paintEvent(event)
         painter = QPainter(self)
-        #painter.setOpacity(0)#设置透明度
         painter.drawPixmap(self.rect(), self.pixmap)
         
     #支持拖拽    
@@ -84,6 +83,25 @@ class MainWindow(QMainWindow):
         #重置标记
         self.m_flag = False
         
+    #-------------------事件重写完毕--------------------
+    
+    #设置排序按钮菜单    
+    def set_menu(self, ind):
+        menu = QMenu(self.ui.page_li[ind])
+        action_list = []
+        action_list.append(QAction(QIcon("./images/UI_Mushroom.png"), "按编号排序", menu))
+        action_list.append(QAction(QIcon("./images/GoldIcon.png"), "按商店价值排序", menu))
+        action_list[0].triggered.connect(lambda: print("编号"))
+        action_list[1].triggered.connect(lambda: print("商店价值"))
+        for action in action_list:
+            menu.addAction(action)
+        self.ui.page_li[ind].sort_btn.setMenu(menu)
+    #设置表格按商店金额排序    
+    def gold_sort(self):
+        #self.info_table_list[ind]
+        #pd.read_excel()
+        pass
+
     #根据中文名称查询圣物编号或圣物英文名
     def get_table_info(self, ind, chi_name, need_eng=False):
         chi_n = self.info_table_list[ind].row_values(0).index("chinese_name") 
@@ -97,15 +115,11 @@ class MainWindow(QMainWindow):
             return eng_n_list[relic_no]
     
     #加载圣物查询界面的图像    
-    def update_pages(self, ind, path):
+    def update_pages(self, ind):
         row_n = math.ceil(self.table_num[ind] / 5)#圣物呈现行数，每行5个,有一行是表头
-        #self.ui.page_li[ind].tableWidget.setIconSize(QSize(100, 100))
         self.ui.page_li[ind].tableWidget.setRowCount(row_n)
         self.ui.page_li[ind].tableWidget.setColumnCount(5)
-        # pw = self.ui.stackedWidget.width()
         w = self.ui.page_li[ind].tableWidget.width() / 5 - 5 #留给滚动条余地
-        #print(w)
-        # self.ui.page_li[ind].tableWidget.move((pw-w)/2, 0)
         for j in range(row_n):
             self.ui.page_li[ind].tableWidget.setRowHeight(j, w + 20)
         for j in range(5):
@@ -123,8 +137,8 @@ class MainWindow(QMainWindow):
         chi_n_list = self.info_table_list[ind].col_values(chi_n, start_rowx=1)#中文名
         
         for j, it in enumerate(eng_n_list):
-            pic_path = f"./images/{path}/{it}.png"
-            #if os.path.isfile(pic_path):图片有效性判断交给MyCustomWidget
+            pic_path = f"./images/{self.pages_name[ind]}/{it}.png"
+            #图片有效性判断交给MyCustomWidget
             if rar_n != -1:
                 self.btn_list[ind].append(OneButtonOneLabel(self.ui.page_li[ind].tableWidget,\
                  j, pic_path, self.get_rarity_color(rar_n_list[j]), chi_n_list[j]))
@@ -238,7 +252,6 @@ class MainWindow(QMainWindow):
     
     #获取物品坐标，更新页面信息,默认为无
     def show_table_info(self, ind, btn_ind):
-        #print(ind, btn_ind, self.table_num[ind])
         if btn_ind == -2: #从圣物列表页获取圣物详情页
             sendbtn = self.sender()
             self.btn_ind[ind] = sendbtn.index
@@ -249,7 +262,6 @@ class MainWindow(QMainWindow):
         relic_no = self.btn_ind[ind] + 1
         self.ui.page_info_li[ind].tableWidget.setItem(1, 1, QTableWidgetItem(str(relic_no)))
         relic_info_list = self.info_table_list[ind].row_values(relic_no)
-        #print(relic_info_list)
         #固定地，表格第0~2列是id、中文名称、英文名称
         name = relic_info_list[1]
         self.ui.page_info_li[ind].lab_name.setText(name)#圣物详情页上方圣物名
@@ -404,9 +416,7 @@ if __name__=="__main__":
     win.setStyleSheet(qssStyle)
     win.show()  
     #增加页面时需要更新
-    win.update_pages(0, "Relics")
-    win.update_pages(1, "Potions")
-    win.update_pages(2, "Blessings")
-    win.update_pages(3, "Curses")
-    win.update_pages(4, "Familiars")
+    for i in range(len(win.pages_name)):
+        win.update_pages(i)
+        win.set_menu(i)
     sys.exit(app.exec_())  
