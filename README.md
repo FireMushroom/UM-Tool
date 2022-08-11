@@ -1,9 +1,9 @@
-# UnderMine专栏图鉴手册V1.0.0
+# UnderMine专栏图鉴手册V1.0.1
 ## 由个人专栏信息改编而来UnderMine图鉴查询工具
 ## 软件作者：B站 火焰大喷菇
-如果只是想使用软件而不是查看代码，请前往以下链接下载UM专栏图鉴手册V1.0.0.rar后解压运行其中的exe文件，祝食用愉快~
+如果只是想使用软件而不是查看代码，请前往以下链接下载UM专栏图鉴手册V1.0.1.rar后解压运行其中的exe文件，祝食用愉快~
 
-网盘链接：https://pan.baidu.com/s/1DiM7ydHM49USQoaNgef6sQ?pwd=5iUM 
+网盘链接：https://pan.baidu.com/s/1El7dbLVOBE15VfH-PKjIWQ?pwd=5iUM 
 
 提取码：5iUM 
 
