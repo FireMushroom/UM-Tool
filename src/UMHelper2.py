@@ -3,6 +3,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtGui import QPalette, QColor, QBrush, QPixmap, QFont, QIcon
 from PyQt5.QtWidgets import QWidget
+from PyQt5.QtCore import pyqtSignal
 
 #加载窗口UI类
 class Ui_MainWindow(object):
@@ -32,7 +33,6 @@ class Ui_MainWindow(object):
             self.sort_btn = QtWidgets.QPushButton("排序方式", self.page)
             self.sort_btn.setProperty("level", "btn_of_main_function")
             self.sort_btn.setGeometry(QtCore.QRect(40, 15, 120, 40))
-            self.sort_btn.hide()
             self.sort_btn.raise_()
         
     class ItemDetailPage:
@@ -235,7 +235,7 @@ class Ui_MainWindow(object):
 
         
         #建立首页
-        self.version = "1.0.0" #当前版本号
+        self.version = "1.1.0" #当前版本号
         self.page_index = QtWidgets.QWidget(self.stackedWidget)
         self.page_index.setObjectName("page_index")
         self.cover_layout = QtWidgets.QVBoxLayout(self.page_index)
@@ -252,7 +252,8 @@ class Ui_MainWindow(object):
 退出请点击<font color="blue"><b>右上角的×</b></font><br>
 软件目前处于早期版本，如<u>遇到bug，或是有功能上的建议，欢迎加QQ交流群:<b>598427123</b></u><br>
 更全的攻略资讯请点击查看<a href="https://www.bilibili.com/read/cv14661146">这篇专栏</a><br>
-上次更新时间: <i><b>2022.8.7</b></i>""")
+1.1.0增加了排序功能，便于在巫术<font color="purple"><b>混乱献祭</b></font>影响下根据代价查询道具。在圣物/药水查询界面，<b>按价格排序</b>可查看各圣物卖给黑兔的价格，乘一定倍率可得商店的出售价格；<b>按稀有度排序</b>可查看传奇圣物/药水在恶魔房出售的代价<br>
+上次更新时间: <i><b>2022.9.4</b></i>""")
         self.read_me.setProperty("level", "text_info")
         self.read_me.setOpenExternalLinks(True)
         self.cover_layout.addWidget(self.cover_name,3)

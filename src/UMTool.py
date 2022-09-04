@@ -7,9 +7,8 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QWidget
 from PyQt5.QtGui import QIcon, QPainter, QPixmap, QBitmap
 import math
 from PyQt5.QtCore import QSize, Qt
-import xlrd
 import re
-#import pandas as pd
+import pandas as pd
 from MyCustomWidget import OneButtonOneLabel
 
 class MainWindow(QMainWindow):
@@ -18,23 +17,15 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.m_flag = False
-        self.pages_name = ["Relics", "Potions", "Blessings", "Curses", "Familiars"]
-        #新表格登记处,需要更新修改
-        excel_list = ["Relic_new.xls", "Potion_new.xlsx", "Blessing_new.xlsx", "Curse_new.xlsx", "Familiar_new.xlsx"]
-        self.page_info_num = len(excel_list)
-        for i in range(self.page_info_num + 1):
-            #使用partial函数给槽赋固定变量的值
-            self.ui.menu_btn_list[i].clicked.connect(partial(self.ui.stackedWidget.setCurrentIndex, i))
-        self.info_table_list = [] #记录表格信息
-        for excel in excel_list:
-            self.info_table_list.append(xlrd.open_workbook("./resources/" + excel).sheets()[0])
-        self.table_num = [] #表格项目数
-        for i in range(len(self.info_table_list)):
-            self.table_num.append(self.info_table_list[i].nrows - 1)   
-        
+        self.setup_excel_data()
         self.btn_ind = [-2 for i in range(self.page_info_num)] #当前按钮编号
         self.f_relic_no = -1 #合成圣物1
         self.l_relic_no = -1 #合成圣物2
+        
+        #绑定左侧按钮的槽函数
+        for i in range(self.page_info_num + 1):
+            #使用partial函数给槽赋固定变量的值
+            self.ui.menu_btn_list[i].clicked.connect(partial(self.ui.stackedWidget.setCurrentIndex, i))
         #左右按钮的槽函数连接，需要更新修改
         self.ui.page_info_li[0].btn_left.clicked.connect(lambda:self.show_table_info(ind = 0, btn_ind = self.btn_ind[0] - 1))
         self.ui.page_info_li[0].btn_right.clicked.connect(lambda:self.show_table_info(ind = 0, btn_ind = self.btn_ind[0] + 1))
@@ -50,11 +41,25 @@ class MainWindow(QMainWindow):
         self.pixmap = QPixmap("./images/UI_BookProps1.png")
         self.bix = QBitmap(QPixmap("./images/UI_BookProps_mask.png").scaled(self.size()))
         self.setMask(self.bix)
+        
+    def setup_excel_data(self):
+        self.pages_name = ["Relics", "Potions", "Blessings", "Curses", "Familiars"]
+        #新表格登记处,需要更新修改
+        self.page_info_num = len(self.pages_name)
+        self.info_table_list = [] #记录表格信息
+        for excel in self.pages_name:
+            self.info_table_list.append(pd.read_excel("./resources/" + excel + ".xlsx", keep_default_na=False, engine='openpyxl'))
+        self.table_num = [] #记录各表格项目数
+        for i in range(len(self.info_table_list)):
+            self.table_num.append(self.info_table_list[i].shape[0])   
+        
+
     #-------------------事件重写--------------------
     #绘制背景图片    
     def paintEvent(self, event):
         super().paintEvent(event)
         painter = QPainter(self)
+        painter.setOpacity(0.8)
         painter.drawPixmap(self.rect(), self.pixmap)
         
     #支持拖拽    
@@ -89,62 +94,100 @@ class MainWindow(QMainWindow):
     def set_menu(self, ind):
         menu = QMenu(self.ui.page_li[ind])
         action_list = []
-        action_list.append(QAction(QIcon("./images/UI_Mushroom.png"), "按编号排序", menu))
-        action_list.append(QAction(QIcon("./images/GoldIcon.png"), "按商店价值排序", menu))
-        action_list[0].triggered.connect(lambda: print("编号"))
-        action_list[1].triggered.connect(lambda: print("商店价值"))
+        action_list.append(QAction(QIcon("./images/UI_Mushroom.png"), "按编号排序(默认)", menu))
+        action_list[0].triggered.connect(partial(self.sort_table, ind, sort_by=""))
+        selections = {"rarity":["稀有度","btn_2.png"],"is_unique":["独特圣物","ExclamationYellow.png"],\
+                      "shop_cost":["商店价值","GoldIcon.png"],"unlock_cost":["解锁价格","Thorium.png"]}
+        title_list = list(self.info_table_list[ind].columns)
+        i = 1
+        for selection in selections.keys():
+            if selection in title_list:
+                action_list.append(QAction(QIcon(f"./images/{selections[selection][1]}"), f"按{selections[selection][0]}排序", menu))
+                action_list[i].triggered.connect(partial(self.sort_table, ind, sort_by=selection))
+                i += 1
         for action in action_list:
             menu.addAction(action)
         self.ui.page_li[ind].sort_btn.setMenu(menu)
+        
     #设置表格按商店金额排序    
-    def gold_sort(self):
-        #self.info_table_list[ind]
-        #pd.read_excel()
-        pass
+    def sort_table(self, ind, sort_by=""):
+        id_list = ["relic", "potion", "blessing", "curse", "familiar"]
+        if sort_by == "":
+            self.info_table_list[ind].sort_index(inplace=True)
+        elif sort_by == "rarity":
+            if ind == 0:
+                self.info_table_list[ind].sort_values(by=["major_curse_cost", "minor_curse_cost", "synthetic_cost", "rarity", f"{id_list[ind]}_id"], ascending=[False, False, False, False, True], inplace=True)
+            elif ind == 1:
+                self.info_table_list[ind].sort_values(by=["major_curse_cost", "minor_curse_cost", "rarity", f"{id_list[ind]}_id"], ascending=[False, False, False, True], inplace=True)
+            else:
+                self.info_table_list[ind].sort_values(by=["rarity", f"{id_list[ind]}_id"], ascending=[False, True], inplace=True)
+        else:
+            self.info_table_list[ind].sort_values(by=[sort_by, f"{id_list[ind]}_id"], ascending=[False, True], inplace=True)
+        selections = {"shop_cost":1,"unlock_cost":2,"rarity":3}
+        if sort_by in selections.keys():
+            self.update_pages(ind, selections[sort_by])
+        else:
+            self.update_pages(ind)
 
     #根据中文名称查询圣物编号或圣物英文名
-    def get_table_info(self, ind, chi_name, need_eng=False):
-        chi_n = self.info_table_list[ind].row_values(0).index("chinese_name") 
-        chi_n_list = self.info_table_list[ind].col_values(chi_n, start_rowx=1)#中文名,下标从0开始     
-        relic_no = chi_n_list.index(chi_name) 
+    def get_table_info(self, ind, chi_name, need_eng=False):    
+        chi_name_list = list(self.info_table_list[ind]["chinese_name"])
+        relic_no = chi_name_list.index(chi_name) 
         if not need_eng:
             return relic_no
         else:
-            eng_n = self.info_table_list[ind].row_values(0).index("english_name")
-            eng_n_list = self.info_table_list[ind].col_values(eng_n, start_rowx=1)
-            return eng_n_list[relic_no]
+            eng_name_list = self.info_table_list[ind]["english_name"].values
+            return eng_name_list[relic_no]
     
-    #加载圣物查询界面的图像    
-    def update_pages(self, ind):
+    #加载圣物查询界面的图像(可以在名字下方附加几个信息按钮)
+    def update_pages(self, ind, flag=0):
+        self.ui.page_li[ind].tableWidget.clear() #清空表格
+        self.btn_list[ind] = [] #清空按钮列表
         row_n = math.ceil(self.table_num[ind] / 5)#圣物呈现行数，每行5个,有一行是表头
         self.ui.page_li[ind].tableWidget.setRowCount(row_n)
         self.ui.page_li[ind].tableWidget.setColumnCount(5)
         w = self.ui.page_li[ind].tableWidget.width() / 5 - 5 #留给滚动条余地
         for j in range(row_n):
-            self.ui.page_li[ind].tableWidget.setRowHeight(j, w + 20)
+            self.ui.page_li[ind].tableWidget.setRowHeight(j, w + 20*((flag + 3) // 2)) #flag=1,2加一行，3再加一行
         for j in range(5):
             self.ui.page_li[ind].tableWidget.setColumnWidth(j, w)
         #以表格中的英文名和稀有度加载圣物图片
-        title_list = self.info_table_list[ind].row_values(0)
-        eng_n = title_list.index("english_name")#获取表标题
-        chi_n = title_list.index("chinese_name")
+        title_list = list(self.info_table_list[ind].columns)
         if "rarity" in title_list:
-            rar_n = title_list.index("rarity")
-            rar_n_list = self.info_table_list[ind].col_values(rar_n, start_rowx=1)#稀有度
+            rar_n = 0
+            rar_n_list = self.info_table_list[ind]["rarity"].values#稀有度
         else:
             rar_n = -1            
-        eng_n_list = self.info_table_list[ind].col_values(eng_n, start_rowx=1)#获取英文名列的所有英文名
-        chi_n_list = self.info_table_list[ind].col_values(chi_n, start_rowx=1)#中文名
+        eng_n_list = self.info_table_list[ind]["english_name"].values#获取英文名列的所有英文名
+        chi_n_list = self.info_table_list[ind]["chinese_name"].values#中文名
         
+        selections = {0:[], 1:["./images/GoldIcon.png"],2:["./images/Thorium.png"],\
+                      3:["./images/Major Curse.png","./images/Minor Curse.png"]}
+        if flag == 1:
+            g_c_list = self.info_table_list[ind]["shop_cost"].values
+        elif flag == 2:
+            u_c_list = self.info_table_list[ind]["unlock_cost"].values
+        elif flag == 3 and ind <= 1:
+            maj_list = self.info_table_list[ind]["major_curse_cost"].values
+            min_list = self.info_table_list[ind]["minor_curse_cost"].values
+            
         for j, it in enumerate(eng_n_list):
+            if flag == 1:
+                btn_text = [str(g_c_list[j])]
+            elif flag == 2:
+                btn_text = [str(u_c_list[j])]
+            elif flag == 3 and ind <= 1:
+                btn_text = [str(maj_list[j]),str(min_list[j])]
+            else:
+                btn_text = []
             pic_path = f"./images/{self.pages_name[ind]}/{it}.png"
             #图片有效性判断交给MyCustomWidget
             if rar_n != -1:
                 self.btn_list[ind].append(OneButtonOneLabel(self.ui.page_li[ind].tableWidget,\
-                 j, pic_path, self.get_rarity_color(rar_n_list[j]), chi_n_list[j]))
+                 j, pic_path, self.get_rarity_color(rar_n_list[j]), chi_n_list[j], btn_pic=selections[flag], btn_text=btn_text))
             else:
                 self.btn_list[ind].append(OneButtonOneLabel(self.ui.page_li[ind].tableWidget,\
-                 j, pic_path, "black", chi_n_list[j]))  
+                 j, pic_path, "black", chi_n_list[j], btn_pic=selections[flag], btn_text=btn_text))  
             self.ui.page_li[ind].tableWidget.setCellWidget(j // 5, j % 5, self.btn_list[ind][j])
             self.btn_list[ind][j].btn.clicked.connect(partial(self.show_table_info, ind, btn_ind=-2))#不设lambda的话，参数会传False
             
@@ -258,19 +301,19 @@ class MainWindow(QMainWindow):
         else: #通过圣物详情页左右翻页
             self.btn_ind[ind] = btn_ind % self.table_num[ind]
             
-        #根据序号(从1开始)获取详细信息
-        relic_no = self.btn_ind[ind] + 1
-        self.ui.page_info_li[ind].tableWidget.setItem(1, 1, QTableWidgetItem(str(relic_no)))
-        relic_info_list = self.info_table_list[ind].row_values(relic_no)
+        #根据按钮序号(从0开始)获取详细信息
+        btn_no = self.btn_ind[ind]
+        relic_info_list = list(self.info_table_list[ind].iloc[btn_no])
         #固定地，表格第0~2列是id、中文名称、英文名称
+        self.ui.page_info_li[ind].tableWidget.setItem(1, 1, QTableWidgetItem(str(relic_info_list[0])))
         name = relic_info_list[1]
         self.ui.page_info_li[ind].lab_name.setText(name)#圣物详情页上方圣物名
         english_name = relic_info_list[2]
         rarity = "" #默认稀有度为空，便于图片颜色的判断
         #根据表头名称确定表格隐藏哪些内容(评分栏之后另算)
         #表格中可能需要隐藏的行名称（以及对应的行号）
-        optional_list = ["rarity", "type", "is_unique", "shop_cost", "unlock_cost", "leveling_up_by"]
-        optional_rowno_list = [2, 3, 5, 6, 7, 12]
+        optional_list = ["rarity", "type", "is_unique", "shop_cost", "unlock_cost", "synthetic_cost", "major_curse_cost", "leveling_up_by"]
+        optional_rowno_list = [2, 3, 5, 6, 7, 10, 8, 12]
         for i in range(2, 13):            
             self.ui.page_info_li[ind].tableWidget.hideRow(i) #隐藏
         self.ui.page_info_li[ind].effect_frame.hide()
@@ -279,7 +322,7 @@ class MainWindow(QMainWindow):
         self.ui.page_info_li[ind].score_frame.hide()
         self.ui.page_info_li[ind].dang_and_disc_frame.hide()     
            
-        title_list = self.info_table_list[ind].row_values(0)
+        title_list = list(self.info_table_list[ind].columns)
         for i in range(3, len(title_list)): #根据表头填内容(去除id、中英文项)
             if title_list[i] == "rarity":
                 rarity = relic_info_list[i]
@@ -312,9 +355,42 @@ class MainWindow(QMainWindow):
                 if unlock_cost != 0:
                     self.ui.page_info_li[ind].tableWidget.setItem(optional_rowno_list[4], 1, QTableWidgetItem(QIcon("./images/Thorium.png"),str(unlock_cost)))
                     self.ui.page_info_li[ind].tableWidget.showRow(optional_rowno_list[4])
+            elif title_list[i] == "synthetic_cost":
+                if relic_info_list[i] != "":
+                    temp_li = relic_info_list[i].split(",")
+                    self.ui.page_info_li[ind].tableWidget.showRow(optional_rowno_list[5])
+                    self.ui.page_info_li[ind].tableWidget.showRow(optional_rowno_list[5]+1)        
+                    f_relic = temp_li[0] #同时拥有XXX和XXX
+                    l_relic = temp_li[1]
+                    self.f_relic_no = self.get_table_info(ind, f_relic)
+                    f_relic_name = self.get_table_info(ind, f_relic, True)
+                    self.l_relic_no = self.get_table_info(ind, l_relic)
+                    l_relic_name = self.get_table_info(ind, l_relic, True)
+                    self.f_btn = QtWidgets.QPushButton(QIcon(f"./images/{self.pages_name[ind]}/{f_relic_name}.png"),"",self.ui.page_info_li[ind].tableWidget)            
+                    self.f_btn.setIconSize(QtCore.QSize(64, 64))
+                    self.f_btn.setCursor(QtGui.QCursor(QtGui.QPixmap("./images/Ellipses_5.png").scaled(40, 30)))
+                    self.l_btn = QtWidgets.QPushButton(QIcon(f"./images/{self.pages_name[ind]}/{l_relic_name}.png"),"",self.ui.page_info_li[ind].tableWidget)            
+                    self.l_btn.setIconSize(QtCore.QSize(64, 64))
+                    self.l_btn.setCursor(QtGui.QCursor(QtGui.QPixmap("./images/Ellipses_5.png").scaled(40, 30)))
+                    self.f_btn.setStyleSheet('background: rgba(255,255,255,0.5);')
+                    self.l_btn.setStyleSheet('background: rgba(255,255,255,0.5);')
+                    self.f_btn.setFlat(True)
+                    self.l_btn.setFlat(True)                
+                    self.f_btn.clicked.connect(lambda: self.show_table_info(ind, self.f_relic_no))
+                    self.l_btn.clicked.connect(lambda: self.show_table_info(ind, self.l_relic_no))
+                    self.ui.page_info_li[ind].tableWidget.setCellWidget(optional_rowno_list[5], 1, self.f_btn)
+                    self.ui.page_info_li[ind].tableWidget.setCellWidget(optional_rowno_list[5]+1, 1, self.l_btn)
+            elif title_list[i] == "major_curse_cost":   
+                if relic_info_list[i] != "":         
+                    self.ui.page_info_li[ind].tableWidget.showRow(optional_rowno_list[6])
+                    self.ui.page_info_li[ind].tableWidget.showRow(optional_rowno_list[6]+1)
+                    mj_cost = relic_info_list[i]
+                    mn_cost = relic_info_list[i+1]
+                    self.ui.page_info_li[ind].tableWidget.setItem(optional_rowno_list[6], 1, QTableWidgetItem(QIcon("./images/Major Curse.png"), str(int(mj_cost))))
+                    self.ui.page_info_li[ind].tableWidget.setItem(optional_rowno_list[6]+1, 1, QTableWidgetItem(QIcon("./images/Minor Curse.png"), str(int(mn_cost))))
             elif title_list[i] == "leveling_up_by":            
-                self.ui.page_info_li[ind].tableWidget.setItem(optional_rowno_list[5], 1, QTableWidgetItem(relic_info_list[i]))
-                self.ui.page_info_li[ind].tableWidget.showRow(optional_rowno_list[5])    
+                self.ui.page_info_li[ind].tableWidget.setItem(optional_rowno_list[7], 1, QTableWidgetItem(relic_info_list[i]))
+                self.ui.page_info_li[ind].tableWidget.showRow(optional_rowno_list[7])    
             elif title_list[i] == "effect":      
                 self.ui.page_info_li[ind].text_effect.setHtml(self.get_styled_text(relic_info_list[i]))
                 self.ui.page_info_li[ind].effect_frame.show()
@@ -343,12 +419,11 @@ class MainWindow(QMainWindow):
                 self.ui.page_info_li[ind].lab_discomfort_content.setText(self.get_colored_text(relic_info_list[i]))
                 self.ui.page_info_li[ind].dang_and_disc_frame.show() 
         #圣物详情页的图片按钮
-        page_name_list = ["Relics", "Potions", "Blessings", "Curses", "Familiars"]
-        pic_path = f"./images/{page_name_list[ind]}/{english_name}.png"
+        pic_path = f"./images/{self.pages_name[ind]}/{english_name}.png"
         if not os.path.isfile(pic_path): #不存在路径则填充空白图
             pic_path = "./images/UI_Blank.png"
-        btn = QtWidgets.QPushButton(QtGui.QIcon(pic_path), "", self.ui.page_info_li[ind].tableWidget)            
-        btn.setIconSize(QtCore.QSize(95, 95))
+        btn = QtWidgets.QPushButton(QIcon(pic_path), "", self.ui.page_info_li[ind].tableWidget)            
+        btn.setIconSize(QSize(95, 95))
         style_btn = f'''QPushButton{{
         border: 5px solid {self.get_rarity_color(rarity)};
         margin: 3px; 
@@ -358,53 +433,9 @@ class MainWindow(QMainWindow):
         btn.setStyleSheet(style_btn)
         self.ui.page_info_li[ind].tableWidget.setCellWidget(0, 0, btn)
         self.ui.page_info_li[ind].tableWidget.setRowHeight(0, 105)
-        #根据传说品质追加恶魔房或合成圣物信息
-        if rarity == "L":
-            if unlock_method[0] == "恶":#追加恶魔房
-                self.ui.page_info_li[ind].tableWidget.showRow(8)
-                self.ui.page_info_li[ind].tableWidget.showRow(9)
-                mn_cost = "0"
-                mj_cost = "0"
-                res = re.findall(r"[\d+大小]", unlock_method) #小心为空,match是从头匹配，开头不符合直接None
-                if len(res) == 4: #X 大 Y 小
-                    mj_cost = res[0]
-                    mn_cost = res[2]
-                elif len(res) == 2 and res[1] == "大":
-                    mj_cost = res[0]
-                else:
-                    mn_cost = res[0]
-                    
-                self.ui.page_info_li[ind].tableWidget.setItem(4, 1, QTableWidgetItem("恶魔房交易"))
-                self.ui.page_info_li[ind].tableWidget.setItem(8, 1, QTableWidgetItem(QIcon("./images/Major Curse.png"), mj_cost))
-                self.ui.page_info_li[ind].tableWidget.setItem(9, 1, QTableWidgetItem(QIcon("./images/Minor Curse.png"), mn_cost))
-            elif unlock_method[0] == "同":#追加合成圣物的信息
-                self.ui.page_info_li[ind].tableWidget.showRow(10)
-                self.ui.page_info_li[ind].tableWidget.showRow(11)        
-                index = unlock_method.find("和")
-                f_relic = unlock_method[4:index] #同时拥有XXX和XXX
-                l_relic = unlock_method[index+1:]
-                self.f_relic_no = self.get_table_info(ind, f_relic)
-                f_relic_name = self.get_table_info(ind, f_relic, True)
-                self.l_relic_no = self.get_table_info(ind, l_relic)
-                l_relic_name = self.get_table_info(ind, l_relic, True)
-                self.f_btn = QtWidgets.QPushButton(QIcon(f"./images/Relics/{f_relic_name}.png"),"",self.ui.page_info_li[ind].tableWidget)            
-                self.f_btn.setIconSize(QtCore.QSize(64, 64))
-                self.f_btn.setCursor(QtGui.QCursor(QtGui.QPixmap("./images/Ellipses_5.png").scaled(40, 30)))
-                self.l_btn = QtWidgets.QPushButton(QIcon(f"./images/Relics/{l_relic_name}.png"),"",self.ui.page_info_li[ind].tableWidget)            
-                self.l_btn.setIconSize(QtCore.QSize(64, 64))
-                self.l_btn.setCursor(QtGui.QCursor(QtGui.QPixmap("./images/Ellipses_5.png").scaled(40, 30)))
-                self.f_btn.setStyleSheet('background: rgba(255,255,255,0.5);')
-                self.l_btn.setStyleSheet('background: rgba(255,255,255,0.5);')
-                self.f_btn.setFlat(True)
-                self.l_btn.setFlat(True)                
-                self.f_btn.clicked.connect(lambda: self.show_table_info(ind, self.f_relic_no))
-                self.l_btn.clicked.connect(lambda: self.show_table_info(ind, self.l_relic_no))
-                
-                self.ui.page_info_li[ind].tableWidget.setItem(4, 1, QTableWidgetItem("持有指定圣物时自动合成"))
-                self.ui.page_info_li[ind].tableWidget.setCellWidget(10, 1, self.f_btn)
-                self.ui.page_info_li[ind].tableWidget.setCellWidget(11, 1, self.l_btn)
 
         self.ui.stackedWidget.setCurrentIndex(1 + ind + self.page_info_num) #跳转至详情页
+        #self.btn_list[0][0].btnClick_signal.connect(lambda idx: print("idx:",idx))
         
 if __name__=="__main__":  
     app = QApplication(sys.argv)  
